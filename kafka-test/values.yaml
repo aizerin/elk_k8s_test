@@ -1,0 +1,14 @@
+kafka:
+  kraft:
+    clusterId: test
+  controller:
+    replicaCount: 2
+  broker:
+    replicaCount: 2
+  listeners:
+    client:
+      protocol: PLAINTEXT
+    external:
+      protocol: PLAINTEXT
+    controller:
+      protocol: PLAINTEXT

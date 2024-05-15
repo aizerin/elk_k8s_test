@@ -1,0 +1,10 @@
+apiVersion: v2
+name: kafka
+description: A Helm chart for Kubernetes
+type: application
+version: 0.0.1
+
+dependencies:
+  - name: kafka
+    version: "29.3.1"
+    repository: "https://charts.bitnami.com/bitnami"

@@ -1,0 +1,8 @@
+{% macro kafka_input() -%}
+group_id => "{{ kafka_group_id }}"
+bootstrap_servers => "{{ kafka_hosts | join(",") }}"
+auto_offset_reset => "earliest"
+topics_pattern => "{{ item.topics_pattern }}"
+consumer_threads => 4
+add_field => { "[@metadata][dataset]" => "{{ item.dataset_name }}" }
+{%- endmacro %}

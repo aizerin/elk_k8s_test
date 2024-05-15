@@ -1,0 +1,291 @@
+---
+versionTag: &versionTag 8.13.0
+logstashDataTag: &logstashDataTag logstash-data:0.0.1
+mainElasticsearch: &mainElasticsearch "elasticsearch-main"
+rorElasticsearch: &rorElasticsearch "elasticsearch-ror"
+
+elk-main:
+  eck-elasticsearch:
+    version: *versionTag
+    enabled: true
+    fullnameOverride: *mainElasticsearch
+    auth:
+      fileRealm:
+        - secretName: es-main-users
+    monitoring:
+      metrics:
+        elasticsearchRefs:
+          - name: *mainElasticsearch
+      logs:
+        elasticsearchRefs:
+          - name: *mainElasticsearch
+  eck-kibana:
+    # tohle je jen pro adminy kibana
+    version: *versionTag
+    enabled: true
+    fullnameOverride: "kibana-main"
+    spec:
+      elasticsearchRef:
+        name: *mainElasticsearch
+        # todo tohle by bylo dobre zkusit vypnout, ale s traefik mne to nejde
+        # u nas na ingress to snad bude v klidu
+      http:
+        tls:
+          selfSignedCertificate:
+            disabled: true
+      monitoring:
+        metrics:
+          elasticsearchRefs:
+            - name: *mainElasticsearch
+        logs:
+          elasticsearchRefs:
+            - name: *mainElasticsearch
+  eck-agent:
+    version: *versionTag
+    enabled: false
+  eck-fleet-server:
+    version: *versionTag
+    enabled: false
+  eck-beats:
+    version: *versionTag
+    enabled: false
+  eck-logstash:
+    version: *versionTag
+    enabled: false
+    # tohle asi pak bude potreba na konfiguraci beatsu pro nginx na kibanu a apm server
+    # fullnameOverride: "logstash-main"
+    elasticsearchRefs:
+      - clusterName: main
+        name: elasticsearch-main
+    pipelinesRef:
+      secretName: logstash-pipeline
+    monitoring:
+      metrics:
+        elasticsearchRefs:
+          - name: *mainElasticsearch
+      logs:
+        elasticsearchRefs:
+          - name: *mainElasticsearch
+    podTemplate:
+      spec:
+        initContainers:
+          - name: logstash-data
+            image: *logstashDataTag
+            command: ["/bin/sh"]
+            args: ["-c", "cp -a /data/. /usr/share/logstash/files/"]
+            volumeMounts:
+              - name: workdir
+                mountPath: /usr/share/logstash/files
+        containers:
+          - name: logstash
+            volumeMounts:
+              - mountPath: /usr/share/logstash/dlq
+                name: dlq
+                readOnly: false
+              - name: workdir
+                mountPath: /usr/share/logstash/files
+        volumes:
+          - name: workdir
+            emptyDir: {}
+    volumeClaimTemplates:
+      - metadata:
+          name: dlq
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+
+  eck-apm-server:
+    version: *versionTag
+    enabled: false
+elk-ror:
+  eck-elasticsearch:
+    version: *versionTag
+    enabled: true
+    fullnameOverride: *rorElasticsearch
+    transport:
+      tls:
+        certificate:
+          # workaround pro to abychom nemuseli rucne kopirovat certifikaty pro cross cluster search
+          # jinak oficialni reseni je az ve vyssi licenci
+          # pro nase ucely ale je tohle dostacujici, cross cluster repilikaci stejne nepotrebujeme
+          secretName: elasticsearch-main-es-transport-ca-internal
+    monitoring:
+      metrics:
+        elasticsearchRefs:
+          - name: *mainElasticsearch
+      logs:
+        elasticsearchRefs:
+          - name: *mainElasticsearch
+    nodeSets:
+      - name: default
+        count: 1
+        config:
+          node.store.allow_mmap: false
+        podTemplate:
+          spec:
+            # TODO prijde mne ze tohle neni potreba, mozna to meli pro debug ?
+            # securityContext:
+            #   runAsUser: 1000
+            containers:
+              - name: elasticsearch
+                env:
+                  - name: INTERNAL_USR_PASS
+                    valueFrom:
+                      secretKeyRef:
+                        name: elasticsearch-ror-es-internal-users
+                        key: elastic-internal
+                  - name: INTERNAL_PROBE_PASS
+                    valueFrom:
+                      secretKeyRef:
+                        name: elasticsearch-ror-es-internal-users
+                        key: elastic-internal-probe
+                  - name: KIBANA_SERVICE_ACCOUNT_TOKEN
+                    valueFrom:
+                      secretKeyRef:
+                        name: kibana-ror-kibana-user
+                        key: token
+                  - name: ELASTIC_MONITORING_PASS
+                    valueFrom:
+                      secretKeyRef:
+                        name: elasticsearch-ror-es-internal-users
+                        key: elastic-internal-monitoring
+                  # TODO JE TOHLE POTREBA, NEMAJ TO JEN PRO DEBUG ?
+                  # - name: ES_JAVA_OPTS
+                  #   value: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8888
+                volumeMounts:
+                  - name: elasticsearch-modules
+                    mountPath: /usr/share/elasticsearch/modules
+                  - name: elasticsearch-lib
+                    mountPath: /usr/share/elasticsearch/lib
+                  - name: config-ror
+                    mountPath: /usr/share/elasticsearch/config/readonlyrest.yml
+                    subPath: readonlyrest.yml
+                  # TODO custom log2j zatim asi nepotrebujem nebo neivm na co
+                  # - name: config-log4j2
+                  #   mountPath: /usr/share/elasticsearch/config/log4j2.properties
+                  #   subPath: log4j2.properties
+            initContainers:
+              # TODO tohle nevim k cemu je, ale maj to vsude :D
+              - name: sysctl
+                securityContext:
+                  runAsUser: 0
+                  privileged: true
+                command: ["sh", "-c", "sysctl -w vm.max_map_count=262144"]
+              - name: install-ror-es-plugin
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  runAsUser:
+                    0
+                    # TODO tady by to chtelo idealne ten soubor hostovat nekde u nas
+                command:
+                  - "/bin/bash"
+                  - "-c"
+                  - |
+                    set -e
+
+                    /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch "https://api.beshu.tech/download/es?edition=es&esVersion=$ES_VERSION&email=eck-example%40readonlyrest.com"
+                    /usr/share/elasticsearch/jdk/bin/java -jar /usr/share/elasticsearch/plugins/readonlyrest/ror-tools.jar patch
+
+                    cp -r /usr/share/elasticsearch/modules /target/usr/share/elasticsearch
+                    cp -r /usr/share/elasticsearch/lib /target/usr/share/elasticsearch
+                env:
+                  - name: ES_VERSION
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.labels['elasticsearch.k8s.elastic.co/version']
+                volumeMounts:
+                  - name: elasticsearch-modules
+                    mountPath: /target/usr/share/elasticsearch/modules
+                  - name: elasticsearch-lib
+                    mountPath: /target/usr/share/elasticsearch/lib
+            volumes:
+              - name: elasticsearch-modules
+                emptyDir: {}
+              - name: elasticsearch-lib
+                emptyDir: {}
+              - name: config-ror
+                configMap:
+                  name: config-readonlyrest.yml
+              # - name: config-log4j2
+              #   configMap:
+              #     name: config-log4j2.properties.yml
+  eck-kibana:
+    version: *versionTag
+    enabled: true
+    fullnameOverride: "kibana-ror"
+    spec:
+      elasticsearchRef:
+        name: *rorElasticsearch
+      config:
+        readonlyrest_kbn.store_sessions_in_index: true
+        readonlyrest_kbn.cookiePass: "12345678901234567890123456789012345678901234567890"
+        readonlyrest_kbn.logLevel: "info"
+      monitoring:
+        metrics:
+          elasticsearchRefs:
+            - name: *mainElasticsearch
+        logs:
+          elasticsearchRefs:
+            - name: *mainElasticsearch
+      podTemplate:
+        spec:
+          containers:
+            - name: kibana
+              volumeMounts:
+                - name: kibana-plugins
+                  mountPath: /usr/share/kibana/plugins
+                - name: kibana-node-modules-kbn
+                  mountPath: /usr/share/kibana/node_modules/@kbn
+                - name: kibana-src
+                  mountPath: /usr/share/kibana/src
+                - name: kibana-xpack-plugins
+                  mountPath: /usr/share/kibana/x-pack/plugins
+          initContainers:
+            - name: install-ror-kbn-plugin
+              securityContext:
+                allowPrivilegeEscalation: false
+                runAsUser: 0
+              # TODO tady by to chtelo idealne ten soubor hostovat nekde u nas
+              command:
+                - "/bin/bash"
+                - "-c"
+                - |
+                  set -e
+
+                  /usr/share/kibana/bin/kibana-plugin install "https://api.beshu.tech/download/kbn?esVersion=$KBN_VERSION&edition=kbn_universal&email=eck-example%40readonlyrest.com"
+                  /usr/share/kibana/node/bin/node /usr/share/kibana/plugins/readonlyrestkbn/ror-tools.js patch
+
+                  cp -r /usr/share/kibana/node_modules/@kbn /target/usr/share/kibana/node_modules
+                  cp -r /usr/share/kibana/src /target/usr/share/kibana
+                  cp -r /usr/share/kibana/x-pack/plugins /target/usr/share/kibana/x-pack
+              env:
+                - name: KBN_VERSION
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.labels['kibana.k8s.elastic.co/version']
+              volumeMounts:
+                - name: kibana-plugins
+                  mountPath: /usr/share/kibana/plugins
+                - name: kibana-node-modules-kbn
+                  mountPath: /target/usr/share/kibana/node_modules/@kbn
+                - name: kibana-src
+                  mountPath: /target/usr/share/kibana/src
+                - name: kibana-xpack-plugins
+                  mountPath: /target/usr/share/kibana/x-pack/plugins
+          volumes:
+            - name: kibana-plugins
+              emptyDir: {}
+            - name: kibana-node-modules-kbn
+              emptyDir: {}
+            - name: kibana-src
+              emptyDir: {}
+            - name: kibana-xpack-plugins
+              emptyDir: {}
+      # TODO bez tohodle mne nefunguje trafik routovani. takhle ta kibana je na http
+      http:
+        tls:
+          selfSignedCertificate:
+            disabled: true

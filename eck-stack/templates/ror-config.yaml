@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-readonlyrest.yml
+data:
+  readonlyrest.yml: |
+    readonlyrest:
+      access_control_rules:
+      
+      - name: "Kibana service account"
+        verbosity: error
+        token_authentication:
+          token: "Bearer ${KIBANA_SERVICE_ACCOUNT_TOKEN}" 
+          username: service_account
+
+      - name: "PROBE"
+        verbosity: error
+        auth_key: "elastic-internal-probe:${INTERNAL_PROBE_PASS}"
+
+      - name: "ELASTIC-INTERNAL"
+        verbosity: error
+        auth_key: "elastic-internal:${INTERNAL_USR_PASS}"
+
+      - name: "ELASTIC-INTERNAL-MONITORING"
+        verbosity: error
+        auth_key: "elastic-internal-monitoring:${ELASTIC_MONITORING_PASS}"
+
+      - name: "Admin access"
+        type: allow
+        auth_key: "admin:admin"

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: elk-stack
+description: A Helm chart for Kubernetes
+type: application
+version: 0.0.1
+
+dependencies:
+  - name: eck-stack
+    version: "0.10.0"
+    repository: "https://helm.elastic.co"
+    alias: elk-main
+  - name: eck-stack
+    version: "0.10.0"
+    repository: "https://helm.elastic.co"
+    alias: elk-ror

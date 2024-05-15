@@ -1,0 +1,7 @@
+---
+kafka_hosts:
+  - nevim
+kafka_group_id: test
+logstash_pipelines:
+  - dataset_name: "test.neco"
+    topics_pattern: "test.*"
