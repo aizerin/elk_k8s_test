@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: logstash-pipeline
+stringData:
+  pipelines.yml: |-
+    - pipeline.id: 01_input_test.stream
+      path.config: /usr/share/logstash/files/generated/{inputs/01_input_test.stream,filters/02_filter_gef_ecs,outputs/01_output_elk_datastream}.cfg
+      dead_letter_queue.enable: true
+      path.dead_letter_queue: /usr/share/logstash/dlq
+    - pipeline.id: 01_input_test.stream-dlq
+      path.config: /usr/share/logstash/files/generated/{inputs/01_input_test.stream-dlq,filters/01_filter_dlq,01_output_elk}.cfg
+      dead_letter_queue.enable: false
+    - pipeline.id: 01_input_test-index
+      path.config: /usr/share/logstash/files/generated/{inputs/01_input_test-index,filters/02_filter_gef_ecs,outputs/01_output_elk_index}.cfg
+      dead_letter_queue.enable: true
+      path.dead_letter_queue: /usr/share/logstash/dlq
+    - pipeline.id: 01_input_test-index-dlq
+      path.config: /usr/share/logstash/files/generated/{inputs/01_input_test-index-dlq,filters/01_filter_dlq,01_output_elk}.cfg
+      dead_letter_queue.enable: false

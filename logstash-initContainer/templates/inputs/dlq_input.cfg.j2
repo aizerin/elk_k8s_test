@@ -1,11 +1,11 @@
 input {
   dead_letter_queue {
-    path => "{{ logstash_dlq_path }}/dead_letter_queue"
-    pipeline_id => "01_input_{{ item.dataset_name }}"
+    path => "{{ logstash_dlq_path }}"
+    pipeline_id => "01_input_{{ item_name }}"
     clean_consumed => true
     add_field => {
-      "pipeline_id" => "01_input_{{ item.dataset_name }}"
-      "[@metadata][dataset]" => "dlq"
+      "pipeline_id" => "01_input_{{ item_name }}"
+      "[@metadata][item_name]" => "dlq"
     }
   }
 }

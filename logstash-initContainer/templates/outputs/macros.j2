@@ -1,8 +1,18 @@
-{% macro elk_output() -%}
+{% macro elk_output_datastream() -%}
 hosts => [ "${MAIN_ES_HOSTS}" ]
 user => "${MAIN_ES_USER}"
 password => "${MAIN_ES_PASSWORD}"
 ssl_certificate_authorities => "${MAIN_ES_SSL_CERTIFICATE_AUTHORITY}"
 data_stream_auto_routing => false
 data_stream_namespace => lm
+{%- endmacro %}
+
+{% macro elk_output_index() -%}
+hosts => [ "${MAIN_ES_HOSTS}" ]
+user => "${MAIN_ES_USER}"
+password => "${MAIN_ES_PASSWORD}"
+ssl_certificate_authorities => "${MAIN_ES_SSL_CERTIFICATE_AUTHORITY}"
+{# we are managing ilm by ourselves #}
+ilm_enabled => false
+manage_template => false
 {%- endmacro %}

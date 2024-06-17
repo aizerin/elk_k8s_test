@@ -4,10 +4,10 @@ ENV ENV=dev
 
 WORKDIR /data
 
-COPY values_${ENV}.yml /values_${ENV}.yml
-COPY requirements.txt /requirements.txt
-COPY generate_pipelines.py /generate_pipelines.py
-COPY templates /templates
+COPY values_${ENV}.yml values_${ENV}.yml
+COPY requirements.txt requirements.txt
+COPY generate_pipelines.py generate_pipelines.py
+COPY templates templates
 
 RUN pip install -r requirements.txt
 
@@ -18,4 +18,4 @@ FROM alpine:3
 WORKDIR /data
 
 COPY --from=builder /data/generated /data/generated
-COPY static_files /
+COPY static_files /data

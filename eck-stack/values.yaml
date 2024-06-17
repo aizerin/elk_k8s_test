@@ -1,6 +1,6 @@
 ---
 versionTag: &versionTag 8.13.0
-logstashDataTag: &logstashDataTag logstash-data:0.0.1
+logstashDataTag: &logstashDataTag logstash-init:latest
 mainElasticsearch: &mainElasticsearch "elasticsearch-main"
 rorElasticsearch: &rorElasticsearch "elasticsearch-ror"
 
@@ -50,53 +50,9 @@ elk-main:
     version: *versionTag
     enabled: false
   eck-logstash:
+    # TODO ten jejich chart je rozbity, cele tohle je v logstash.yaml v template
     version: *versionTag
     enabled: false
-    # tohle asi pak bude potreba na konfiguraci beatsu pro nginx na kibanu a apm server
-    # fullnameOverride: "logstash-main"
-    elasticsearchRefs:
-      - clusterName: main
-        name: elasticsearch-main
-    pipelinesRef:
-      secretName: logstash-pipeline
-    monitoring:
-      metrics:
-        elasticsearchRefs:
-          - name: *mainElasticsearch
-      logs:
-        elasticsearchRefs:
-          - name: *mainElasticsearch
-    podTemplate:
-      spec:
-        initContainers:
-          - name: logstash-data
-            image: *logstashDataTag
-            command: ["/bin/sh"]
-            args: ["-c", "cp -a /data/. /usr/share/logstash/files/"]
-            volumeMounts:
-              - name: workdir
-                mountPath: /usr/share/logstash/files
-        containers:
-          - name: logstash
-            volumeMounts:
-              - mountPath: /usr/share/logstash/dlq
-                name: dlq
-                readOnly: false
-              - name: workdir
-                mountPath: /usr/share/logstash/files
-        volumes:
-          - name: workdir
-            emptyDir: {}
-    volumeClaimTemplates:
-      - metadata:
-          name: dlq
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 1Gi
-
   eck-apm-server:
     version: *versionTag
     enabled: false

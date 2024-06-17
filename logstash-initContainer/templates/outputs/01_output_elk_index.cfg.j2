@@ -1,0 +1,23 @@
+{% import 'macros.j2' as macros with context %}
+
+output {
+    if [@metadata][_id] {
+      elasticsearch {
+        {{ macros.elk_output_index() | indent(10) }}
+        document_id => "%{[@metadata][_id]}" 
+        index => "%{[@metadata][item_name]}"
+      }
+    } else {
+      elasticsearch {
+        {{ macros.elk_output_index() | indent(10) }}
+        index => "%{[@metadata][item_name]}"
+      }
+    }
+
+    if [@metadata][save_error] {
+        elasticsearch {
+            {{ macros.elk_output_index() | indent(12) }}
+            index => "%{[@metadata][item_name]}.error"
+        }
+    }
+}

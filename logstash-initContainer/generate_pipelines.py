@@ -77,7 +77,8 @@ with open(yaml_path, "r") as file:
 logstash_pipelines = data["logstash_pipelines"]
 
 default_filters = "filters/02_filter_gef_ecs"
-default_output = "outputs/01_output_elk"
+default_output_datastream = "outputs/01_output_elk_datastream"
+default_output_index = "outputs/01_output_elk_index"
 default_input = "kafka_input"
 
 templates_input_path = templates_path.joinpath("inputs")
@@ -93,11 +94,14 @@ generated_input_path.mkdir(parents=True, exist_ok=True)
 pipelines = []
 
 for item in logstash_pipelines:
-    print(f"processing: {item['dataset_name']}")
+    item_name = item["datastream_name"] if "datastream_name" in item else item["index_name"]
+    is_datastream = "datastream_name" in item
+    print(f"processing: {item_name}")
+    has_dlq = "skip_dlq" not in item or not item["skip_dlq"]
     if "skip_kafka" not in item or not item["skip_kafka"]:
         filters = item.get("filter", default_filters)
         print(f"filters: {filters}")
-        output = item.get("output", default_output)
+        output = item.get("output", default_output_datastream if is_datastream else default_output_index)
         print(f"output: {output}")
         input = item.get("input", default_input) + ".cfg.j2"
         print(f"input: {input}")
@@ -106,12 +110,13 @@ for item in logstash_pipelines:
 
         content = template.render(
             item=item,
+            item_name=item_name,
             java_truststore_path=java_truststore_path,
             java_truststore_password=java_truststore_password,
             kafka_hosts=data["kafka_hosts"],
             kafka_group_id=data["kafka_group_id"],
         )
-        pipeline_id = f"01_input_{item['dataset_name']}"
+        pipeline_id = f"01_input_{item_name}"
 
         with open(generated_input_path / f"{pipeline_id}.cfg", "w") as output_file:
             output_file.write(content)
@@ -120,23 +125,24 @@ for item in logstash_pipelines:
             {
                 "pipeline.id": pipeline_id,
                 "path.config": f"{pipelines_volume}{{inputs/{pipeline_id},{filters},{output}}}.cfg",
-                "dead_letter_queue.enable": True,
+                "dead_letter_queue.enable": has_dlq,
                 "path.dead_letter_queue": dlq_volume,
             }
         )
-        print(f"DONE processing: {item['dataset_name']}")
+        print(f"DONE processing: {item_name}")
     else:
-        print(f"skipping input: {item['dataset_name']}")
-    if "skip_dlq" not in item or not item["skip_dlq"]:
+        print(f"skipping input: {item_name}")
+    if has_dlq:
 
         template = template_input_env.get_template("dlq_input.cfg.j2")
 
         content = template.render(
             item=item,
+            item_name=item_name,
             logstash_dlq_path=dlq_volume,
         )
 
-        pipeline_id = f"01_input_{item['dataset_name']}-dlq"
+        pipeline_id = f"01_input_{item_name}-dlq"
 
         with open(generated_input_path / f"{pipeline_id}.cfg", "w") as output_file:
             output_file.write(content)
@@ -148,9 +154,9 @@ for item in logstash_pipelines:
                 "dead_letter_queue.enable": False,
             }
         )
-        print(f"DONE processing: {item['dataset_name']}")
+        print(f"DONE processing: {item_name}")
     else:
-        print(f"skipping dlq: {item['dataset_name']}")
+        print(f"skipping dlq: {item_name}")
 
 
 def str_presenter(dumper, data):

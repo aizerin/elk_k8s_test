@@ -1,7 +1,9 @@
 ---
 kafka_hosts:
-  - nevim
+  - kafka.elk.svc.cluster.local:9092
 kafka_group_id: test
 logstash_pipelines:
-  - dataset_name: "test.neco"
-    topics_pattern: "test.*"
+  - datastream_name: "test.stream"
+    topics_pattern: "stream.*"
+  - index_name: "test-index"
+    topics_pattern: "index.*"

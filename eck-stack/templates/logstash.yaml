@@ -1,0 +1,57 @@
+---
+apiVersion: logstash.k8s.elastic.co/v1alpha1
+kind: Logstash
+metadata:
+  name: eck-logstash
+  labels:
+    helm.sh/chart: eck-logstash-0.10.0
+    app.kubernetes.io/name: eck-logstash
+  annotations:
+    eck.k8s.elastic.co/license: basic
+spec:
+  version: 8.13.0
+  count: 1
+  podTemplate:
+    spec:
+      initContainers:
+        - name: logstash-init
+          image: logstash-init:latest
+          # todo jen pro lokalni build, pak smazat az bude v registrech
+          imagePullPolicy: Never
+          command: ["/bin/sh"]
+          args: ["-c", "cp -a /data/. /usr/share/logstash/files/"]
+          volumeMounts:
+            - name: workdir
+              mountPath: /usr/share/logstash/files
+      containers:
+        - name: logstash
+          volumeMounts:
+            - mountPath: /usr/share/logstash/dlq
+              name: dlq
+              readOnly: false
+            - name: workdir
+              mountPath: /usr/share/logstash/files
+      volumes:
+        - name: workdir
+          emptyDir: {}
+  pipelinesRef:
+    secretName: logstash-pipeline
+  volumeClaimTemplates:
+    - metadata:
+        name: dlq
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+  monitoring:
+    metrics:
+      elasticsearchRefs:
+        - name: elasticsearch-main
+    logs:
+      elasticsearchRefs:
+        - name: elasticsearch-main
+  elasticsearchRefs:
+    - clusterName: main
+      name: elasticsearch-main

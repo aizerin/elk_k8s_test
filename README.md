@@ -140,6 +140,8 @@
   - nakopcit static filtry
 - TODO pak se musi refactorovat puvodni reseni na nove
   - neni to nic hrozneho, jen se upravej inputy, outputy a prejmenuji se nazvy
+- nejak pak slouzit pipeliny s document id
+- sloucit pipeliny kde je jen rozdilne heslo na DB (prod/nonprod)
 
 # TODO kibana
 
