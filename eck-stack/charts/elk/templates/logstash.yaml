@@ -1,21 +1,22 @@
 ---
+{{- if .Values.logstash.enabled }}
 apiVersion: logstash.k8s.elastic.co/v1alpha1
 kind: Logstash
 metadata:
-  name: eck-logstash
+  name: {{ .Values.logstash.name }}
   labels:
-    helm.sh/chart: eck-logstash-0.10.0
-    app.kubernetes.io/name: eck-logstash
+    {{- include "logstash.labels" . | nindent 4 }}
   annotations:
     eck.k8s.elastic.co/license: basic
 spec:
-  version: 8.13.0
-  count: 1
+  version: {{ .Values.clusterVersion }}
+  count: {{ .Values.logstash.count }}
+
   podTemplate:
     spec:
       initContainers:
         - name: logstash-init
-          image: logstash-init:latest
+          image: logstash-init:{{ required "logstash.initImageTag is required" .Values.logstash.initImageTag }}
           # todo jen pro lokalni build, pak smazat az bude v registrech
           imagePullPolicy: Never
           command: ["/bin/sh"]
@@ -44,14 +45,15 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 1Gi
+            storage: {{ .Values.logstash.dlq.size }}
   monitoring:
     metrics:
       elasticsearchRefs:
-        - name: elasticsearch-main
+        - name: {{ .Values.elasticsearch.name }}
     logs:
       elasticsearchRefs:
-        - name: elasticsearch-main
+        - name: {{ .Values.elasticsearch.name }}
   elasticsearchRefs:
     - clusterName: main
-      name: elasticsearch-main
+      name: {{ .Values.elasticsearch.name }}
+{{- end }}

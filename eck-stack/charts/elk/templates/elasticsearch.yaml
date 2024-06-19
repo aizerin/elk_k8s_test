@@ -1,0 +1,39 @@
+---
+{{- if .Values.elasticsearch.enabled }}
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: {{ .Values.elasticsearch.name }}
+  labels:
+    {{- include "elasticsearch.labels" . | nindent 4 }}
+  annotations:
+    eck.k8s.elastic.co/license: basic
+spec:
+    version: {{ .Values.clusterVersion }}
+    auth:
+      fileRealm:
+        - secretName: es-basic-users
+      roles:
+        - secretName: es-logstash-roles
+    monitoring:
+      metrics:
+        elasticsearchRefs:
+          - name: {{ .Values.elasticsearch.name }}
+      logs:
+        elasticsearchRefs:
+          - name: {{ .Values.elasticsearch.name }}
+    nodeSets:
+    - name: default
+      count: 1
+      config:
+        node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          containers:
+          - name: elasticsearch
+            resources:
+              limits:
+                memory: 2Gi
+              requests:
+                memory: 2Gi
+{{- end }}

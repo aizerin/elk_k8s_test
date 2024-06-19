@@ -1,0 +1,14 @@
+---
+{{- if .Values.elasticsearch.enabled }}
+kind: Secret
+apiVersion: v1
+metadata:
+  name: es-logstash-roles
+stringData:
+  roles.yml: |-
+    eck_logstash_user_role:
+      cluster: [ "monitor", "manage_ilm", "read_ilm", "manage_logstash_pipelines", "manage_index_templates", "cluster:admin/ingest/pipeline/get"]
+      indices:
+      - names: [ "lm-*", "logstash", "logstash-*", "ecs-logstash", "ecs-logstash-*", "logs-*", "metrics-*", "synthetics-*", "traces-*" ]
+        privileges: [ "manage", "write", "create_index", "read", "view_index_metadata" ]
+{{- end }}

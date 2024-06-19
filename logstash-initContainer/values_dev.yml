@@ -3,7 +3,13 @@ kafka_hosts:
   - kafka.elk.svc.cluster.local:9092
 kafka_group_id: test
 logstash_pipelines:
-  - datastream_name: "test.stream"
-    topics_pattern: "stream.*"
-  - index_name: "test-index"
+  - name: "test.stream"
+    topics_pattern: "stream.test.*"
+  - name: "test.filter.stream"
+    topics_pattern: "stream.filter.*"
+    filters:
+      - hugo
+      - gef_ecs
+  - name: "test.index"
+    datastream: false
     topics_pattern: "index.*"

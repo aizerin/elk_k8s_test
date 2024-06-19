@@ -1,0 +1,74 @@
+---
+{{- if .Values.apmServer.enabled }}
+apiVersion: apm.k8s.elastic.co/v1
+kind: ApmServer
+metadata:
+  name: {{ .Values.apmServer.name }}
+  labels:
+    {{- include "apmServer.labels" . | nindent 4 }}
+  annotations:
+    eck.k8s.elastic.co/license: basic
+spec:
+  version: {{ .Values.clusterVersion }}
+  count: {{ .Values.apmServer.count }}
+  elasticsearchRef:
+    name: {{ .Values.elasticsearch.name }}
+  # cheme mit ten apm central config ?
+  kibanaRef:
+    name: {{ .Values.kibana.name }}
+  config:
+    http:
+      enabled: true
+      host: localhost
+      port: 5066
+  podTemplate:
+    spec:
+      containers:
+        - name: metricbeat
+          image: docker.elastic.co/beats/metricbeat:{{ .Values.clusterVersion }}
+          args: [
+                "-c", "/usr/share/metricbeat/config/metricbeat.yml",
+                "-e"
+              ]
+          volumeMounts:
+            - name: metricbeat-config
+              mountPath: /usr/share/metricbeat/config
+              readOnly: true
+            - name: metricbeat-data
+              mountPath: /usr/share/metricbeat/data
+            - name: elasticsearch-certs
+              mountPath: /usr/share/metricbeat/certs
+              readOnly: true
+          env:
+            - name: ELASTIC_MONITORING_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.name }}-{{ .Release.Namespace }}-{{ .Values.elasticsearch.name }}-beat-es-mon-user
+                  key: {{ .Release.Namespace }}-{{ .Values.elasticsearch.name }}-{{ .Release.Namespace }}-{{ .Values.elasticsearch.name }}-beat-es-mon-user
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+      volumes:
+        - name: metricbeat-config
+          configMap:
+            name: {{.Values.apmServer.name }}-metricbeat-config
+        - name: metricbeat-data
+          emptyDir: {}
+{{- end }}

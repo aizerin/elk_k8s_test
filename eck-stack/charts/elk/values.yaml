@@ -1,0 +1,19 @@
+clusterVersion: 8.13.0
+logstash:
+  name: logstash-main
+  enabled: true
+  count: 1
+  initImageTag: latest
+  dlq:
+    size: 1Gi
+kibana:
+  name: kibana-main
+  enabled: true
+  count: 1
+elasticsearch:
+  name: elasticsearch-main
+  enabled: true
+apmServer:
+  name: apm-server-main
+  count: 1
+  enabled: true

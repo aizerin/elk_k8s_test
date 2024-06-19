@@ -4,20 +4,20 @@ output {
     if [@metadata][_id] {
       elasticsearch {
         {{ macros.elk_output_index() | indent(10) }}
-        document_id => "%{[@metadata][_id]}" 
-        index => "%{[@metadata][item_name]}"
+        document_id => "{{ document_id }}"
+        index => "lm-{{ item_name }}-logs"
       }
     } else {
       elasticsearch {
         {{ macros.elk_output_index() | indent(10) }}
-        index => "%{[@metadata][item_name]}"
+        index => "lm-{{ item_name }}-logs" 
       }
     }
 
     if [@metadata][save_error] {
         elasticsearch {
             {{ macros.elk_output_index() | indent(12) }}
-            index => "%{[@metadata][item_name]}.error"
+            index => "lm-{{ item_name }}.error-logs" 
         }
     }
 }

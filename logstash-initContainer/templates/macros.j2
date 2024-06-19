@@ -3,8 +3,9 @@ hosts => [ "${MAIN_ES_HOSTS}" ]
 user => "${MAIN_ES_USER}"
 password => "${MAIN_ES_PASSWORD}"
 ssl_certificate_authorities => "${MAIN_ES_SSL_CERTIFICATE_AUTHORITY}"
-data_stream_auto_routing => false
 data_stream_namespace => lm
+data_stream_auto_routing => false
+data_stream => true
 {%- endmacro %}
 
 {% macro elk_output_index() -%}
@@ -15,4 +16,13 @@ ssl_certificate_authorities => "${MAIN_ES_SSL_CERTIFICATE_AUTHORITY}"
 {# we are managing ilm by ourselves #}
 ilm_enabled => false
 manage_template => false
+data_stream => false
+{%- endmacro %}
+
+{% macro kafka_input() -%}
+group_id => "{{ values.kafka_group_id }}"
+bootstrap_servers => "{{ values.kafka_hosts | join(",") }}"
+auto_offset_reset => "earliest"
+topics_pattern => "{{ item.topics_pattern }}"
+consumer_threads => {{ values.kafka_consumer_threads | default(4) }}
 {%- endmacro %}

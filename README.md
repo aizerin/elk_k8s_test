@@ -22,10 +22,10 @@
   - sber metriky z clusteru ze vsech sluzeb
 - logstash
   - konfigurace
-  - nahravani pipeline dle konfigurace
-    - pozor nektere pipeline potrebuji i zavisloti na db driveru
-  - dead letter queue a posilani chybnych dat do clusteru
-  - nejaky patch ssl (ale to asi nebude uz potreba)
+  - (ok) nahravani pipeline dle konfigurace
+    - (ok) pozor nektere pipeline potrebuji i zavisloti na db driveru
+  - (ok) dead letter queue a posilani chybnych dat do clusteru
+  - (ok) nejaky patch ssl (neni uz potreba)
 
 # CO UMIME TED S TERRAFORMEM - STAVAJICI RESENI
 
@@ -46,21 +46,29 @@
   - ROR - proxy cluster
     - kibana pro koncove uzivatele
     - overeni pres ldap
-  - monitoring pomoci filelebatu a metricbeatu skrze ECK
-    - oba elasticy
-    - obe kibany
+- monitoring pomoci filelebatu a metricbeatu skrze ECK
+  - oba elasticy
+  - obe kibany
+  - logstash
 - logstash
   - pipeliny se buildi jako init container
     - mame tam hodne dat, tak nebylo mozne mit vsechno v secretu
+    - sql drivery, grog patterny apod soucasti
     - seznam pipeline ale musi byt jako secret aby s tim umel pracovat ECK
   - zmeny o proti puvodnimu reseni
-    - konfigurace cca stejna, jen se prejmenovalo index_name > dataset_name
-    - prepnute na datastreamy
-    - interne se zmenili input a output pluginy aby pracovali s datastreamy
+    - konfigurace cca stejna, jen se neco prejmenovalo nebo doplnilo
+      - validace vstupnich dat
+    - prepnute na datastreamy, ale ne vse jde. takze podporujeme oboje
     - kvuli data streamum bude jine pojmenovani indexu (s teckama)
+      - logs-xxx.yyy-lm
+    - ne datastreamy ale nemuzou byt pojmenovane stejne. tzn je to opacne
+      - lm-xxx.yyy-logs
+    - vsechny hesla v secretu
 - dva oddelene charty
   - eck-chart - slouzi pro instalaci a nastaveni ECK. je to samostatny operator nezavisly na svem okoli
-  - eck-stack - slouzi
+  - eck-stack - slouzi ke konfiguraci samotneho stacku
+    - soucasti jsou pak dva oddelene chart pro ror a main
+    - ty se pak externalizuji a v eck-stack bude jen konfigurace specificka pro prostredi
 
 # TODO
 
@@ -71,13 +79,12 @@
   - otazka na kolik je to vubec potreba teda
 - presmerovat pak na nase registry
 - zkusit zmigrovat indexy z dev prostredi
-- jak to chceme koncipovat s namespacema. cheme mit jeden namespace elk. ja to mam ted a nebo namespace per ECK, MAIN a ROR ? ja myslim ze to nejak nehraje roli
+- jak to chceme koncipovat s namespacema. cheme mit jeden namespace elk. jak to mam ted. nebo namespace per ECK, MAIN a ROR ? ja myslim ze to nejak nehraje roli
+  - v ramci jednoho NS muzeme jednoduse sdilet secrety apod
 - nastavit cross cluster search v terraformu
 - prometheus metriky, chceme ? viz stack monitoring
-- udelat vlastni chart abychom mohli jednoduse menit konfiguraci jen pro dev/test/prod - podobne jak je to pro codelist editor
-  - ja ted pouzivam ty example charty od elasticu primo, ale ono to nic moc neumi a spis to prekazi. navic tam jsou ruzne inkonzistence v nastaveni. treba kibana ma spec a ostatni nemaji apod
-    - oni top maji koncipovane jako hello world example asi to uplne neni zamysleno na prime pouziti
-  - takze bych je vykopiroval jako zaklad a udelal si vlastni charty (je to vzdycky jen jeden soubor, jako konfigurace toho ECK)
+- odstranit ROR admin account
+  - a udelat ror ucty pres secrety
 
 # stack monitoring
 
@@ -99,7 +106,7 @@
 - aktualne se pouzivaji self signed certs managovane by ECK pro https i transport
   - ten si resi vsechno, obnovu certifikatu apod
   - pokud nekdo bude chtit pristoupit na elk rest, kibanu apod tak to bude vystaveno pres ingress. kde si certifikat uz resi balancer a ten je vadlidni dle cpas CA
-  - reseni pomoci cer manageru je mimo hru, zadneho nemame :)
+  - reseni pomoci cert manageru je mimo hru, zadneho nemame :)
 - zaver tedy je ze aktualni stav je ok a self signed mezi clusterem nevadi.
   - pokud nekdo by chtel komunikovat primo se servisou v clusteru tak si vezme certak ze secretu (takto to automaticky dela ECK taky)
 - two way SSL ROR a MAIN cluster
@@ -126,22 +133,32 @@
 - navod na definici uzivatelu bez ROR https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-users-and-roles.html
   - dle dokumentace ale lepsi pouzit k ovladani rest api (tedy terraform)
   - ted jak je to v POC jako plain password je shit, lepsi bude vygenerovat ty hashe
+- vyzkouset jak to je s userama a rolema. jestli lze mit vice secretu a nebo to ma byt jeden
 
-# TODO logstash
+# Logstash
 
-- vymyslet nejakou moznost jak zachovat konfiguraci pipelines bez nejakych breaking changes
-- pipeliny datastreamy logstash output ? jak udelat
-  - https://www.elastic.co/guide/en/logstash/current/plugins-outputs-elasticsearch.html#plugins-outputs-elasticsearch-ds-examples
-- script co overi ze je zalozeny datastream pres terraform
+- TODO script co overi ze je zalozeny datastream pres terraform
   - on si ho size logstash zalozi sam, ale pak bychom meli problem tam nejak docpat tu retenci dat pres terraform. nemeli bychom se ceho chytnout
-- TODO init container
+  - obdoba toho co je ted v index_checker v puvodnim reseni
+- OK init container
   - nakopcit lib drivery
   - nakopcit patterny
   - nakopcit static filtry
 - TODO pak se musi refactorovat puvodni reseni na nove
   - neni to nic hrozneho, jen se upravej inputy, outputy a prejmenuji se nazvy
-- nejak pak slouzit pipeliny s document id
-- sloucit pipeliny kde je jen rozdilne heslo na DB (prod/nonprod)
+- TODO nastavit PVC na DLQ a index sql databaze
+  - longhorn ?
+  - logstash nejak ma neco default, tak mrknout na to jak to funguje
+- OK nejak pak sloucit pipeliny s document id
+- TODO sloucit pipeliny kde je jen rozdilne heslo na DB (prod/nonprod)
+- TODO hesla pres secrety
+- vyzkouset ruzne druhy pipeline
+  - OK datastream
+  - OK index
+  - OK dlq
+  - TODO mssql
+  - TODO ojdbc
+  - TODO grok
 
 # TODO kibana
 
@@ -152,11 +169,12 @@
 # TODO apm-server
 
 - prenest konfiguraci
-- nebudeme chtit vyzkouset nejaky ten central configuration ?
+- neni podpora pro monitoring... nutne vytvorit asi rucne
 - tady se bude muset prenest konfigurace z toho vlastniho nginx na overeni tokenu
   - a pak ho vystavit pres ingress
   - monitoring toho nginx nejak ? muzeme tam k tomu pustit ten elastic agent
 - jinak to nebude zadna veda
+- chceme nejaky ten apm central config ? jestli ne, tak se muzou z helmu smazat ty nastaveni pro to
 
 # TODO fleet/elastic agent
 

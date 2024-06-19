@@ -1,7 +1,9 @@
+---
+{{- if .Values.elasticsearch.enabled }}
 apiVersion: v1
 kind: Secret
 metadata:
-  name: es-main-users
+  name: es-basic-users
 type: kubernetes.io/basic-auth
 stringData:
   username: test
@@ -9,3 +11,4 @@ stringData:
   roles: superuser # optional, not part of kubernetes.io/basic-auth
 # todo lepsi bude vygenerovat skrze ty hashe eventualne
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-users-and-roles.html
+{{- end }}

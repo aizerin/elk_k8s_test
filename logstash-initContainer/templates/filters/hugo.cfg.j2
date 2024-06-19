@@ -1,0 +1,20 @@
+filter {
+    mutate {
+        convert => {
+            "http.response.duration" => "integer"
+            "informa.async" => "boolean"
+            "http.request.bytes" => "integer"
+            "http.response.bytes" => "integer"
+            "informa.msgSourceSystem" => "integer"
+            "informa.msgTargetSystem" => "integer"
+        }
+    }
+    date {
+        match => [ "informa.responseTime", "HH:mm:ss.SSS", "ISO8601" ]
+        target => "informa.responseTime"
+    }
+    date {
+        match => [ "informa.requestTime", "HH:mm:ss.SSS", "ISO8601" ]
+        target => "informa.requestTime"
+    }
+}

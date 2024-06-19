@@ -4,20 +4,20 @@ output {
     if [@metadata][_id] {
       elasticsearch {
         {{ macros.elk_output_datastream() | indent(10) }}
-        document_id => "%{[@metadata][_id]}" 
-        data_stream_dataset => "%{[@metadata][item_name]}"
+        document_id => "{{ document_id }}"
+        data_stream_dataset => "{{ dataset | default(item_name) }}"
       }
     } else {
       elasticsearch {
         {{ macros.elk_output_datastream() | indent(10) }}
-        data_stream_dataset => "%{[@metadata][item_name]}"
+        data_stream_dataset => "{{ dataset | default(item_name) }}"
       }
     }
 
     if [@metadata][save_error] {
         elasticsearch {
             {{ macros.elk_output_datastream() | indent(12) }}
-            data_stream_dataset => "%{[@metadata][item_name]}.error"
+            data_stream_dataset => "{{ dataset | default(item_name) }}.error"
         }
     }
 }

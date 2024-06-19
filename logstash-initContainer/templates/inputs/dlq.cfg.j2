@@ -1,0 +1,10 @@
+input {
+  dead_letter_queue {
+    path => "{{ logstash_dlq_path }}"
+    pipeline_id => "{{ pipeline_id }}"
+    clean_consumed => true
+    add_field => {
+      "pipeline_id" => "{{ pipeline_id }}"
+    }
+  }
+}

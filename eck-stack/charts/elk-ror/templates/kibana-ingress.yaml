@@ -1,9 +1,9 @@
-# mozna to bude soucasti chartu v budoucnu
-# https://github.com/elastic/cloud-on-k8s/pull/7839
+---
+{{- if .Values.kibana.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: kibana-main-ingress
+  name: {{ .Values.kibana.name }}-ingress
   # TODO kdybychom nechteli vypinat https
   # to se pak bude hodit na ten elasticsearch hlavne asi
   # annotations:
@@ -14,16 +14,17 @@ spec:
   # todo zmenit pak u nas na nginx
   ingressClassName: traefik
   rules:
-    - host: kibana-main.rancher.localhost
+    - host: kibana.rancher.localhost
       http:
         paths:
           - backend:
               service:
-                name: kibana-main-kb-http
+                name: {{ .Values.kibana.name }}-kb-http
                 port:
                   number: 5601
             path: /
             pathType: Prefix
   tls:
     - hosts:
-        - kibana-main.rancher.local
+        - kibana.rancher.local
+{{- end }}
