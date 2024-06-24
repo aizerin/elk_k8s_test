@@ -13,62 +13,49 @@ spec:
   count: {{ .Values.apmServer.count }}
   elasticsearchRef:
     name: {{ .Values.elasticsearch.name }}
-  # cheme mit ten apm central config ?
-  kibanaRef:
-    name: {{ .Values.kibana.name }}
   config:
     http:
       enabled: true
-      host: localhost
+      host: 0.0.0.0
       port: 5066
   podTemplate:
+    metadata:
+      annotations:
+        co.elastic.logs/json.keys_under_root: "true"
+        co.elastic.logs/json.add_error_key: "true"
+        co.elastic.logs/json.message_key: "message"
+        co.elastic.metrics/raw: |
+          [
+            {
+              "module": "beat",
+              "enabled": true,
+              "period": "10s",
+              "metricsets": [
+                "stats",
+                "state"
+              ],
+              "hosts": "http://${data.host}:${data.ports.metrics}",
+              "xpack.enabled": "true"
+            }
+          ]
     spec:
       containers:
-        - name: metricbeat
-          image: docker.elastic.co/beats/metricbeat:{{ .Values.clusterVersion }}
-          args: [
-                "-c", "/usr/share/metricbeat/config/metricbeat.yml",
-                "-e"
-              ]
-          volumeMounts:
-            - name: metricbeat-config
-              mountPath: /usr/share/metricbeat/config
-              readOnly: true
-            - name: metricbeat-data
-              mountPath: /usr/share/metricbeat/data
-            - name: elasticsearch-certs
-              mountPath: /usr/share/metricbeat/certs
-              readOnly: true
-          env:
-            - name: ELASTIC_MONITORING_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.elasticsearch.name }}-{{ .Release.Namespace }}-{{ .Values.elasticsearch.name }}-beat-es-mon-user
-                  key: {{ .Release.Namespace }}-{{ .Values.elasticsearch.name }}-{{ .Release.Namespace }}-{{ .Values.elasticsearch.name }}-beat-es-mon-user
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: status.podIP
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.name
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: spec.nodeName
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
-      volumes:
-        - name: metricbeat-config
-          configMap:
-            name: {{.Values.apmServer.name }}-metricbeat-config
-        - name: metricbeat-data
-          emptyDir: {}
+        - name: apm-server
+          ports:
+            - name: https
+              containerPort: 8200
+              protocol: TCP
+            - name: metrics
+              containerPort: 5066
+              protocol: TCP
+  http:
+    service:
+      spec:
+        ports:
+          - name: https
+            port: 8200
+            targetPort: 8200
+          - name: metrics
+            port: 5066
+            targetPort: 5066
 {{- end }}

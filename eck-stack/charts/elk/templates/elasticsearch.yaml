@@ -15,19 +15,28 @@ spec:
         - secretName: es-basic-users
       roles:
         - secretName: es-logstash-roles
-    monitoring:
-      metrics:
-        elasticsearchRefs:
-          - name: {{ .Values.elasticsearch.name }}
-      logs:
-        elasticsearchRefs:
-          - name: {{ .Values.elasticsearch.name }}
     nodeSets:
     - name: default
       count: 1
       config:
         node.store.allow_mmap: false
       podTemplate:
+        metadata:
+          annotations:
+              co.elastic.metrics/raw: |
+                [
+                  {
+                    "module": "elasticsearch",
+                    "enabled": true,
+                    "metricsets": ["cluster_stats","enrich","index","index_recovery","index_summary","ml_job","node_stats","shard"],
+                    "period": "10s",
+                    "hosts": "https://${data.host}:${data.ports.https}",
+                    "username": "elastic",
+                    "password": "${kubernetes.elk.{{ .Values.elasticsearch.name }}-es-elastic-user.elastic}",
+                    "ssl.verification_mode": "none",
+                    "xpack.enabled": "true"
+                  }
+                ]
         spec:
           containers:
           - name: elasticsearch

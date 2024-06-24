@@ -11,8 +11,27 @@ metadata:
 spec:
   version: {{ .Values.clusterVersion }}
   count: {{ .Values.logstash.count }}
-
+  config:
+    monitoring.enabled: false
+    log.format: json
   podTemplate:
+    metadata:
+      annotations:
+        co.elastic.logs/module: logstash
+        co.elastic.metrics/raw: |
+          [
+            {
+              "module": "logstash",
+              "enabled": true,
+              "period": "10s",
+              "metricsets": ["node","node_stats"],
+              "hosts": "https://${data.host}:${data.ports.http}",
+              "username": "elastic",
+              "password": "${kubernetes.elk.{{ .Values.elasticsearch.name }}-es-elastic-user.elastic}",
+              "ssl.verification_mode": "none",
+              "xpack.enabled": "true"
+            }
+          ]
     spec:
       initContainers:
         - name: logstash-init
@@ -46,13 +65,6 @@ spec:
         resources:
           requests:
             storage: {{ .Values.logstash.dlq.size }}
-  monitoring:
-    metrics:
-      elasticsearchRefs:
-        - name: {{ .Values.elasticsearch.name }}
-    logs:
-      elasticsearchRefs:
-        - name: {{ .Values.elasticsearch.name }}
   elasticsearchRefs:
     - clusterName: main
       name: {{ .Values.elasticsearch.name }}

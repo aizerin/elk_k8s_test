@@ -17,14 +17,31 @@ spec:
     readonlyrest_kbn.store_sessions_in_index: true
     readonlyrest_kbn.cookiePass: "12345678901234567890123456789012345678901234567890"
     readonlyrest_kbn.logLevel: "info"
-  monitoring:
-    metrics:
-      elasticsearchRefs:
-        - name: {{ .Values.elasticsearch.name }}
-    logs:
-      elasticsearchRefs:
-        - name: {{ .Values.elasticsearch.name }}
+    monitoring.kibana.collection.enabled: false
+    logging:
+      appenders:
+        json-layout:
+          type: console
+          layout:
+            type: json
+      root:
+        appenders: [json-layout]
   podTemplate:
+    metadata:
+      annotations:
+        co.elastic.metrics/raw: |
+          [
+            {
+              "module": "kibana",
+              "enabled": true,
+              "period": "10s",
+              "hosts": "http://${data.host}:${data.ports.http}",
+              "username": "elastic",
+              "password": "${kubernetes.elk.{{ .Values.elasticsearch.name }}-es-elastic-user.elastic}",
+              "ssl.verification_mode": "none",
+              "xpack.enabled": "true"
+            }
+          ]
     spec:
       containers:
         - name: kibana

@@ -1,0 +1,9 @@
+clusterVersion: 8.13.0
+mainClusterName: elasticsearch-main
+mainClusterKibanaName: kibana-main
+filebeat:
+  name: filebeat-monitoring
+  enabled: true
+metricbeat:
+  name: metricbeat-monitoring
+  enabled: true

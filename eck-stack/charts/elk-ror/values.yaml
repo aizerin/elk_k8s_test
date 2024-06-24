@@ -1,6 +1,7 @@
 mainClusterName: elasticsearch-main
 clusterVersion: 8.13.0
 kibana:
+  name: kibana-ror
   enabled: true
   count: 1
 elasticsearch:

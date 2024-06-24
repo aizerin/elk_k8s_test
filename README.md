@@ -14,6 +14,7 @@
   - nginx proxy na breadcrumbs
   - konfigurace
 - apm-server
+  - instalace (OK)
   - nginx proxy na overeni jwt tokenu
   - konfigurace
 - filebeat
@@ -64,11 +65,14 @@
     - ne datastreamy ale nemuzou byt pojmenovane stejne. tzn je to opacne
       - lm-xxx.yyy-logs
     - vsechny hesla v secretu
-- dva oddelene charty
+- apm-server
+  - vicemene stejne jako predtim, neni tu nic zajimaveho
+- tri oddelene charty (je to spis pro lepsi oddeleni konfigurace)
   - eck-chart - slouzi pro instalaci a nastaveni ECK. je to samostatny operator nezavisly na svem okoli
-  - eck-stack - slouzi ke konfiguraci samotneho stacku
+  - elk-stack - slouzi ke konfiguraci samotneho stacku
     - soucasti jsou pak dva oddelene chart pro ror a main
     - ty se pak externalizuji a v eck-stack bude jen konfigurace specificka pro prostredi
+  - elk-stack-monitoring - filebeat a metricbeat pro monitoring clusteru
 
 # TODO
 
@@ -89,10 +93,18 @@
 # stack monitoring
 
 - https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-stack-monitoring.html
-- tohle nastaveni by mela byt obdoba asi toho co delame ted. tedy filebeat a metricbeat na primo
-  - ten metric beat je asi ok
-  - filebeat - budeme chtit ty logy posilat filebeatem a nebo pres kafku
-  - zakladni nastaveni, ktere ma nejake limitace. ale ja myslim ze to neni potreba resit nejak extra navic. https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s_when_to_use_it.html
+- zakladni nastaveni pres monitoring je tak ze on pro kazdy pod udela sidecard container s metricbeatem a filebeatem
+  - zere to resources navic
+  - zapne logovani do toho podu na filesystem
+  - nakonec tohle reseni zamitnuto
+  - https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s_when_to_use_it.html
+- filebeate a metricbeaty jako daemonset pro monitoring clusteru
+  - nastaveni je trochu neintuitivni
+    - na druhou stranu je jednoduche tam pridat dalsi veci
+    - daleko jednodusi nez vsude konfigurovat sidecontainer
+  - filebeat se mne nepodarilo omezit jen na elk namespace jinak nez pres processor
+    - jinak pak nefungujou filebeat hinty
+    - s tim processorem to je ale tak ze on nabira vsechno a dropuje to mist toho aby nabiral jen co potrebuje
 - to budeme mit monitoring jako od ELKU ale cheme i neco dalsiho. prometheus ?
   - koukal jsem ze jsou nejaky prometheus pluginy jako exportery pro ten elk
   - nebo kam budeme primarne koukat misto zabbixu ?
@@ -163,23 +175,16 @@
 # TODO kibana
 
 - mame tam vlastni nginx pro treb breadcrumbs, to bude potreba prenest
-  - monitoring toho nginx nejak ? muzeme tam k tomu pustit ten elastic agent
+  - monitoring toho nginx
 - overit breadcrumbs na nove kibane, nemusi fungovat
 
 # TODO apm-server
 
 - prenest konfiguraci
-- neni podpora pro monitoring... nutne vytvorit asi rucne
 - tady se bude muset prenest konfigurace z toho vlastniho nginx na overeni tokenu
   - a pak ho vystavit pres ingress
-  - monitoring toho nginx nejak ? muzeme tam k tomu pustit ten elastic agent
+  - monitoring toho nginx
 - jinak to nebude zadna veda
-- chceme nejaky ten apm central config ? jestli ne, tak se muzou z helmu smazat ty nastaveni pro to
-
-# TODO fleet/elastic agent
-
-- chceme ?
-- nebo chceme po staru s filebeatem
 
 # TODO terraform
 

@@ -17,19 +17,28 @@ spec:
           # jinak oficialni reseni je az ve vyssi licenci
           # pro nase ucely ale je tohle dostacujici, cross cluster repilikaci stejne nepotrebujeme
           secretName: {{ .Values.mainClusterName }}-es-transport-ca-internal
-    monitoring:
-      metrics:
-        elasticsearchRefs:
-          - name: {{ .Values.mainClusterName }}
-      logs:
-        elasticsearchRefs:
-          - name: {{ .Values.mainClusterName }}
     nodeSets:
       - name: default
         count: 1
         config:
           node.store.allow_mmap: false
         podTemplate:
+          metadata:
+            annotations:
+                co.elastic.metrics/raw: |
+                  [
+                    {
+                      "module": "elasticsearch",
+                      "enabled": true,
+                      "metricsets": ["cluster_stats","enrich","index","index_recovery","index_summary","ml_job","node_stats","shard"],
+                      "period": "10s",
+                      "hosts": "https://${data.host}:${data.ports.https}",
+                      "username": "elastic",
+                      "password": "${kubernetes.elk.{{ .Values.elasticsearch.name }}-es-elastic-user.elastic}",
+                      "ssl.verification_mode": "none",
+                      "xpack.enabled": "true"
+                    }
+                  ]
           spec:
             # TODO prijde mne ze tohle neni potreba, mozna to meli pro debug ?
             # securityContext:
@@ -42,6 +51,11 @@ spec:
                       secretKeyRef:
                         name: {{ .Values.elasticsearch.name }}-es-internal-users
                         key: elastic-internal
+                  - name: ELASTIC_USR_PASS
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ .Values.elasticsearch.name }}-es-elastic-user
+                        key: elastic
                   - name: INTERNAL_PROBE_PASS
                     valueFrom:
                       secretKeyRef:

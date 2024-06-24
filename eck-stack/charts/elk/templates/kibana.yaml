@@ -13,18 +13,33 @@ spec:
   count: {{ .Values.kibana.count }}
   # TODO checeme mit ten apm central config ?
   config:
-    xpack.fleet.packages:
-    - name: apm
-      version: latest
+    monitoring.kibana.collection.enabled: false
+    logging:
+      appenders:
+        json-layout:
+          type: console
+          layout:
+            type: json
+      root:
+        appenders: [json-layout]
   elasticsearchRef:
     name: {{ .Values.elasticsearch.name }}
-  monitoring:
-    metrics:
-      elasticsearchRefs:
-        - name: {{ .Values.elasticsearch.name }}
-    logs:
-      elasticsearchRefs:
-        - name: {{ .Values.elasticsearch.name }}
+  podTemplate:
+    metadata:
+      annotations:
+        co.elastic.metrics/raw: |
+          [
+            {
+              "module": "kibana",
+              "enabled": true,
+              "period": "10s",
+              "hosts": "http://${data.host}:${data.ports.http}",
+              "username": "elastic",
+              "password": "${kubernetes.elk.{{ .Values.elasticsearch.name }}-es-elastic-user.elastic}",
+              "ssl.verification_mode": "none",
+              "xpack.enabled": "true"
+            }
+          ]
       # TODO bez tohodle mne nefunguje trafik routovani. takhle ta kibana je na http
   http:
     tls:

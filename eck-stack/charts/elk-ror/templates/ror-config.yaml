@@ -23,6 +23,10 @@ data:
         verbosity: error
         auth_key: "elastic-internal:${INTERNAL_USR_PASS}"
 
+      - name: "ELASTIC"
+        verbosity: error
+        auth_key: "elastic:${ELASTIC_USR_PASS}"
+
       - name: "ELASTIC-INTERNAL-MONITORING"
         verbosity: error
         auth_key: "elastic-internal-monitoring:${ELASTIC_MONITORING_PASS}"
