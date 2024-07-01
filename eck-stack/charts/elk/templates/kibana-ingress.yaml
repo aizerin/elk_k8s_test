@@ -14,16 +14,18 @@ spec:
   # todo zmenit pak u nas na nginx
   ingressClassName: traefik
   rules:
-    - host: kibana-main.rancher.localhost
+    {{- range .Values.kibana.hosts }}
+    - host: {{ . | quote }}
       http:
-        paths:
-          - backend:
-              service:
-                name: {{ .Values.kibana.name }}-kb-http
-                port:
-                  number: 5601
-            path: /
-            pathType: Prefix
+          paths:
+            - path: "/"
+              pathType: ImplementationSpecific
+              backend:
+                service:
+                  name: {{ $.Values.kibana.name }}-kb-http
+                  port:
+                    number: 5601
+    {{- end }}
   tls:
     - hosts:
         - kibana-main.rancher.local

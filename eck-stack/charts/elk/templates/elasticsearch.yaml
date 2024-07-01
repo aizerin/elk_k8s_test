@@ -41,8 +41,5 @@ spec:
           containers:
           - name: elasticsearch
             resources:
-              limits:
-                memory: 2Gi
-              requests:
-                memory: 2Gi
+              {{- toYaml .Values.elasticsearch.resources | nindent 14 }}
 {{- end }}

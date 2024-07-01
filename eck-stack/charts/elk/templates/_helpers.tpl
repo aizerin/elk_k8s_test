@@ -29,3 +29,14 @@ app.kubernetes.io/name: {{ .Values.apmServer.name }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{- define "apmServer.nginx.labels" -}}
+helm.sh/chart: {{ include "chart.name" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{ include "apmServer.nginx.selectorLabels" . }}
+{{- end }}
+
+{{- define "apmServer.nginx.selectorLabels" -}}
+app.kubernetes.io/name: {{ .Values.apmServer.nginx.name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

@@ -1,0 +1,113 @@
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /tmp/nginx.pid;
+
+load_module /etc/nginx/modules/ngx_http_auth_jwt_module.so;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    proxy_temp_path /tmp/proxy_temp;
+    client_body_temp_path /tmp/client_temp;
+    fastcgi_temp_path /tmp/fastcgi_temp;
+    uwsgi_temp_path /tmp/uwsgi_temp;
+    scgi_temp_path /tmp/scgi_temp;
+
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format main escape=json '{'
+        '"@timestamp": "$time_iso8601",'
+        '"ecs.version": "8.11.0",'
+        '"event": { "module": "nginx", "dataset": "nginx.access", "kind": "event", "category": ["network","web"], "type": ["access"], "outcome": "failure" },'
+        '"source": { "ip": "$remote_addr" },'
+        '"http": {'
+            '"request": { "method": "$request_method", "bytes": $request_length, "referrer": "$http_referer", "body": { "content": "$request_body"} },'
+            '"response": { "status_code": $status, "bytes": $bytes_sent }'
+        '},'
+        '"url": {'
+            '"scheme": "$http_x_forwarded_proto",'
+            '"domain": "$host",'
+            '"path": "$request_uri"'
+        '},'
+        '"message": "$request",'
+        '"user_agent": { "original": "$http_user_agent" },'
+        '"processing_time":"$request_time"'
+    '}';
+
+    map $status $loggable_status
+    {
+        ~^[123] 0;
+        default 1;
+    }
+
+    map $request_uri $exclude_agents_url {
+        ~*^.*/config/v1/agents 0;
+        default              1;
+    }
+
+    map "$loggable_status$exclude_agents_url" $loggable {
+        "11" 1;
+        default 0;
+    }
+
+    access_log  /var/log/nginx/access.log main if=$loggable;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+    client_max_body_size 10M;
+    client_body_buffer_size     100M;
+
+    auth_jwt_enabled off;
+    auth_jwt_redirect off;
+    auth_jwt_use_keyfile on;
+    auth_jwt_keyfile_path "/etc/nginx/certs/$NGINX_APIGW_PUBLIC_KEY";
+    auth_jwt_algorithm RS256;
+
+
+    server {
+        listen 8081;
+        listen [::]:8081;
+
+        location /nginx_status {
+            stub_status;
+        }
+    }
+
+    server {
+        listen 8080;
+        listen [::]:8080;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        location / {
+            proxy_pass $APMSERVER_SERVICE/;
+        }
+
+        location  $APMSERVER_REWRITE_PATH {
+            proxy_pass $APMSERVER_SERVICE/;
+            auth_jwt_enabled on;
+        }
+
+        location  $APMSERVER_REWRITE_PATH/ {
+            proxy_pass $APMSERVER_SERVICE/;
+            auth_jwt_enabled on;
+        }
+
+        location  $APMSERVER_PUBLIC_REWRITE_PATH {
+            proxy_pass $APMSERVER_SERVICE/;
+        }
+
+        location  $APMSERVER_PUBLIC_REWRITE_PATH/ {
+            proxy_pass $APMSERVER_SERVICE/;
+        }
+    }
+}

@@ -40,6 +40,11 @@ spec:
               "xpack.enabled": "true"
             }
           ]
+    spec:
+      containers:
+        - name: kibana
+          resources:
+            {{- toYaml .Values.kibana.resources | nindent 12 }}
       # TODO bez tohodle mne nefunguje trafik routovani. takhle ta kibana je na http
   http:
     tls:

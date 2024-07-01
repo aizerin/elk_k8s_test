@@ -47,10 +47,7 @@
   - ROR - proxy cluster
     - kibana pro koncove uzivatele
     - overeni pres ldap
-- monitoring pomoci filelebatu a metricbeatu skrze ECK
-  - oba elasticy
-  - obe kibany
-  - logstash
+- monitoring pomoci filelebatu a metricbeatu skrze daemonset a hinty
 - logstash
   - pipeliny se buildi jako init container
     - mame tam hodne dat, tak nebylo mozne mit vsechno v secretu
@@ -76,12 +73,11 @@
 
 # TODO
 
-- jak budete resit secrety ? dnes mame v ansiblu viditelne pro vsechny
-  - budeme mit secrety z nejkaeho toho password manager
-  - nebo self sealed
-  - nebo jak mame ted viditelne pro vsechny
-  - otazka na kolik je to vubec potreba teda
 - presmerovat pak na nase registry
+- asi pridat vsude image pull secret ?
+- jak budete resit secrety ? dnes mame v ansiblu viditelne pro vsechny
+  - self sealed
+  - pro elastic usery jejich tool vyzkouset
 - zkusit zmigrovat indexy z dev prostredi
 - jak to chceme koncipovat s namespacema. cheme mit jeden namespace elk. jak to mam ted. nebo namespace per ECK, MAIN a ROR ? ja myslim ze to nejak nehraje roli
   - v ramci jednoho NS muzeme jednoduse sdilet secrety apod
@@ -102,9 +98,6 @@
   - nastaveni je trochu neintuitivni
     - na druhou stranu je jednoduche tam pridat dalsi veci
     - daleko jednodusi nez vsude konfigurovat sidecontainer
-  - filebeat se mne nepodarilo omezit jen na elk namespace jinak nez pres processor
-    - jinak pak nefungujou filebeat hinty
-    - s tim processorem to je ale tak ze on nabira vsechno a dropuje to mist toho aby nabiral jen co potrebuje
 - to budeme mit monitoring jako od ELKU ale cheme i neco dalsiho. prometheus ?
   - koukal jsem ze jsou nejaky prometheus pluginy jako exportery pro ten elk
   - nebo kam budeme primarne koukat misto zabbixu ?
@@ -112,6 +105,8 @@
 - monitoring samotneho ECK
   - ma primo nejaky prometheus export na zapnuti
   - https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-enabling-the-metrics-endpoint.html
+- custom nginx kibana/apm-server
+  - chceme tam i prometheus ?
 
 # TLS
 

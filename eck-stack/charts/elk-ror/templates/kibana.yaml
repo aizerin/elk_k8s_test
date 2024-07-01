@@ -54,6 +54,8 @@ spec:
               mountPath: /usr/share/kibana/src
             - name: kibana-xpack-plugins
               mountPath: /usr/share/kibana/x-pack/plugins
+          resources:
+            {{- toYaml .Values.kibana.resources | nindent 12 }}
       initContainers:
         - name: install-ror-kbn-plugin
           securityContext:

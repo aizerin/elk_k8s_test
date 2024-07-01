@@ -1,0 +1,25 @@
+---
+{{- if .Values.apmServer.nginx.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.apmServer.nginx.name }}
+  labels:
+    {{- include "apmServer.nginx.labels" . | nindent 4 }}
+spec:
+  # todo zmenit pak u nas na nginx
+  ingressClassName: "traefik"
+  rules:
+    {{- range .Values.apmServer.nginx.hosts }}
+    - host: {{ . | quote }}
+      http:
+          paths:
+            - path: "/"
+              pathType: ImplementationSpecific
+              backend:
+                service:
+                  name: {{ $.Values.apmServer.nginx.name }}
+                  port:
+                    number: 8080
+    {{- end }}
+{{- end }}

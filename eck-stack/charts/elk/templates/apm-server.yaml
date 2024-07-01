@@ -14,6 +14,7 @@ spec:
   elasticsearchRef:
     name: {{ .Values.elasticsearch.name }}
   config:
+    # povoleni monitoringu
     http:
       enabled: true
       host: 0.0.0.0
@@ -41,6 +42,7 @@ spec:
     spec:
       containers:
         - name: apm-server
+          # pridani portu pro monitoring, musi se zahnout i puvodni
           ports:
             - name: https
               containerPort: 8200
@@ -51,6 +53,7 @@ spec:
   http:
     service:
       spec:
+        # pridani portu pro monitoring, musi se zahnout i puvodni
         ports:
           - name: https
             port: 8200

@@ -51,6 +51,8 @@ spec:
               readOnly: false
             - name: workdir
               mountPath: /usr/share/logstash/files
+          resources:
+            {{- toYaml .Values.logstash.resources | nindent 12 }}
       volumes:
         - name: workdir
           emptyDir: {}

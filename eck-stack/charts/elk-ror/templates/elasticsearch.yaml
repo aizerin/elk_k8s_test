@@ -82,10 +82,8 @@ spec:
                   - name: config-ror
                     mountPath: /usr/share/elasticsearch/config/readonlyrest.yml
                     subPath: readonlyrest.yml
-                  # TODO custom log2j zatim asi nepotrebujem nebo neivm na co
-                  # - name: config-log4j2
-                  #   mountPath: /usr/share/elasticsearch/config/log4j2.properties
-                  #   subPath: log4j2.properties
+                resources:
+                  {{- toYaml .Values.elasticsearch.resources | nindent 14 }}
             initContainers:
               # TODO tohle nevim k cemu je, ale maj to vsude :D
               - name: sysctl

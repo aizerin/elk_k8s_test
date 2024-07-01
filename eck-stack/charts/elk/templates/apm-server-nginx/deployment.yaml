@@ -1,0 +1,52 @@
+---
+{{- if .Values.apmServer.nginx.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.apmServer.nginx.name }}
+  labels:
+    {{- include "apmServer.nginx.labels" . | nindent 4 }}
+spec:
+  replicas: {{.Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "apmServer.nginx.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    # TODO monitoring, filebeat
+      # annotations:
+      labels:
+        {{- include "apmServer.nginx.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: apm-server-nginx
+          image: apm-server-nginx:{{ required "apmServer.nginx.imageTag is required" .Values.apmServer.nginx.imageTag }}
+          # todo jen pro lokalni build, pak smazat az bude v registrech
+          imagePullPolicy: Never
+          env:
+            - name: NGINX_APIGW_PUBLIC_KEY
+              value: "{{ .Values.apmServer.nginx.apigwPublicKey }}"
+            - name: APMSERVER_REWRITE_PATH
+              value: "{{ .Values.apmServer.nginx.rewritePath }}"
+            - name: APMSERVER_PUBLIC_REWRITE_PATH
+              value: "{{ .Values.apmServer.nginx.publicRewritePath }}"
+            - name: APMSERVER_SERVICE
+              value: "{{ .Values.apmServer.nginx.apmServerService }}"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: http-monitoring
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /nginx_status
+              port: http-monitoring
+          readinessProbe:
+            httpGet:
+              path: /nginx_status
+              port: http-monitoring
+          resources:
+            {{- toYaml .Values.apmServer.nginx.resources | nindent 12 }}
+{{- end }}

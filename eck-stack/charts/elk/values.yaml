@@ -6,14 +6,47 @@ logstash:
   initImageTag: latest
   dlq:
     size: 1Gi
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      memory: 1Gi
 kibana:
   name: kibana-main
+  hosts: ["kibana.rancher.localhost"]
   enabled: true
   count: 1
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      memory: 1Gi
 elasticsearch:
   name: elasticsearch-main
   enabled: true
+  resources:
+    limits:
+      memory: 2Gi
+    requests:
+      memory: 2Gi
 apmServer:
   name: apm-server-main
   count: 1
   enabled: true
+  nginx:
+    name: apm-server-nginx-main
+    hosts: ["apm.rancher.localhost"]
+    imageTag: latest
+    enabled: true
+    count: 1
+    apigwPublicKey: test-apigw-default_ssl_key-public_key.pem
+    rewritePath: /test/apm
+    publicRewritePath: /test/public-apm
+    apmServerService: http://apm-server-main-apm-http.elk.svc.cluster.local:8200
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 200m
+        memory: 512Mi

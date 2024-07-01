@@ -2,8 +2,19 @@ mainClusterName: elasticsearch-main
 clusterVersion: 8.13.0
 kibana:
   name: kibana-ror
+  hosts: ["kibana-ror.rancher.localhost"]
   enabled: true
   count: 1
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      memory: 1Gi
 elasticsearch:
   name: elasticsearch-ror
   enabled: true
+  resources:
+    limits:
+      memory: 2Gi
+    requests:
+      memory: 2Gi

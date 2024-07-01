@@ -1,9 +1,9 @@
 ---
 elk:
   logstash:
-    enabled: true
+    enabled: false
 elk-ror:
   kibana:
-    enabled: true
+    enabled: false
   elasticsearch:
-    enabled: true
+    enabled: false
